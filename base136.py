@@ -39,7 +39,7 @@ class solution:
             if sum(tem_seller[tem_seller[yixiang] == yixiang_value]['货物数量（张）']) > 0: ##尽可能的取出可以满足多个意向的
                 tem_seller = tem_seller[tem_seller[yixiang] == yixiang_value]
                 satisfy_yixiang.append(str(i + self.tem_yixiang_index+2))
-        tem_seller = tem_seller.sort_values(by=['货物数量（张）'], ascending=True)
+        tem_seller = tem_seller.sort_values(by=['货物数量（张）'], ascending=False)
         for i in tem_seller.index:
             good_num = tem_seller.loc[i]['货物数量（张）']
             if good_num<=0:
@@ -81,9 +81,8 @@ class solution:
                 buyer_tm.loc[buyer_tm.index, '权值系数'] = buyer_tm.loc[buyer_tm.index, '权值系数'] + pd.notna(
                     buyer_tm.loc[buyer_tm.index, col1[i]]).astype(int) * weight[i]
         buyer_tm.loc[buyer_tm.index, '权重'] = buyer_tm.loc[buyer_tm.index, '权值系数'] * buyer_tm.loc[buyer_tm.index, '购买货物数量']
-        buyer_tm=buyer_tm.sort_values(by=['权重'],ascending=True)
+        buyer_tm=buyer_tm.sort_values(by=['权重'],ascending=False)
         return buyer_tm
-
 
     def search_sameyixiang(self,emotions_and_good):
         """
@@ -110,22 +109,6 @@ class solution:
 
             if self.tem_yixiang_index==0 and sum(self.tem_seller['货物数量（张）'])<sum(self.tem_buyer['购买货物数量']): ##只要在是第一意向并且卖的货物少于买的货物的时候才会这
                 self.tem_buyer=self.tem_buyer.sort_values(by=['平均持仓时间','购买货物数量'],ascending=False) ##根据平均持仓时间倒序，持仓时间越长的越优先挑选货物
-                ##我只要把持有时间长的都弄为第一意向就可以了，别的人就不管他了。
-                sum_seller= sum(self.tem_seller['货物数量（张）']) ##总共有这么多
-                for ii,ij in enumerate(self.tem_buyer.index):
-                    if sum_seller>0:
-                        sum_seller=sum_seller-self.tem_buyer.loc[ij,'购买货物数量']
-                    else:
-                        ##把前面哪些人供应好了就可以了，后面的可以不管
-                        tem_buyer1=self.tem_buyer[:ii]
-                        if sum(tem_buyer1['购买货物数量'])>sum(self.tem_seller['货物数量（张）']): ##这么多的已经足够消化了
-                            print('1111')
-                        tem_buyer2=self.tem_buyer[ii:ii+1]
-                        tem_buyer3=self.tem_buyer[ii+1:]
-                        break
-                tem_buyer1=self.getorder(tem_buyer1,var,list(self.yixiang2value.keys()).copy())
-                tem_buyer3 = self.getorder(tem_buyer3, var, list(self.yixiang2value.keys()).copy())
-                self.tem_buyer=pd.concat([tem_buyer1,tem_buyer2,tem_buyer3])
             else:##否则按照购买数量进行排序，购买数量越多的就越优先
                 self.tem_buyer=self.getorder(self.tem_buyer,var,list(self.yixiang2value.keys()).copy())
 
@@ -167,7 +150,7 @@ class solution:
         tem_seller = self.tem_seller.copy()
         satisfy_yixiang="0"
         number = buyer_tem.loc[buyer_index, '购买货物数量']
-        tem_seller = tem_seller.sort_values(by=['货物数量（张）'], ascending=True)
+        tem_seller = tem_seller.sort_values(by=['货物数量（张）'], ascending=False)
         for i in tem_seller.index:
             seller_id=tem_seller.loc[i]['卖方客户']
             good_id=tem_seller.loc[i]['货物编号']
@@ -175,7 +158,7 @@ class solution:
             good_num=tem_seller.loc[i]['货物数量（张）']
             if good_num==0:
                 break
-            index = i
+
             if good_num >= number:
                 tem_seller.loc[i,'货物数量（张）'] = good_num - number
                 self.tem_seller.loc[i,'货物数量（张）'] = good_num - number  ##真实的记录下来
@@ -186,8 +169,8 @@ class solution:
             else:
                 self.result.append([buyer_id, seller_id, var, good_id, ware_id, good_num, satisfy_yixiang])
                 number = number - good_num
-                tem_seller.loc[i,'货物数量（张）'] = 0  #tem_seller.loc[i]['货物数量（张）'] -good_num
-                self.tem_seller.loc[i,'货物数量（张）'] =0  # self.tem_seller.loc[i]['货物数量（张）']-good_num
+                tem_seller.loc[i,'货物数量（张）'] = 0
+                self.tem_seller.loc[i,'货物数量（张）'] =0
                 self.seller.loc[i, '货物数量（张）']=0
                 if number==0:
                     break
@@ -202,7 +185,7 @@ class solution:
         for var in ["SR","CF"]:
             self.tem_seller=self.seller[self.seller['品种']==var]
             self.tem_buyer=self.buyer[self.buyer['品种']==var]
-            self.tem_buyer=self.tem_buyer.sort_values(by=['购买货物数量'], ascending=True)
+            self.tem_buyer=self.tem_buyer.sort_values(by=['购买货物数量'], ascending=False)
             buyer_tem_len = len(self.tem_buyer)
             print("该情况下买方用户的数量", buyer_tem_len)
             for i, buyer_index in enumerate(self.tem_buyer.index):
@@ -236,7 +219,7 @@ class solution:
                 emotions_and_good.append((i, "CF", tem2, tem2 * self.CF_value[self.tem_yixiang_index]))
 
             emotions_and_good=[i for i in emotions_and_good if i[2]>0]
-            emotions_and_good = sorted(emotions_and_good, key=lambda x: x[3])#[::-1]
+            emotions_and_good = sorted(emotions_and_good, key=lambda x: x[3])[::-1]
             self.search_sameyixiang(emotions_and_good)
 
 
@@ -248,7 +231,7 @@ class solution:
 
 sol=solution(seller,buyer)
 sol.main()
-# res=pd.read_csv('result_format_example.csv',encoding='gbk')
-# col=res.columns.to_list()
-# resu=pd.DataFrame(sol.result,columns=col)
-# resu.to_csv(r"result.txt",sep=",",columns=col,index=False)
+res=pd.read_csv('result_format_example.csv',encoding='gbk')
+col=res.columns.to_list()
+resu=pd.DataFrame(sol.result,columns=col)
+# resu.to_csv(r"result.txt",sep=",",columns=col,index=False,encoding='gbk')
